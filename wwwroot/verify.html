@@ -11,10 +11,17 @@
 <div class="container">
     <h1>Enter code</h1>
     <form method="post" action="/verify">
+        <input type="hidden" name="email" id="email" />
         <input type="text" name="code" placeholder="Code" required />
         <button type="submit">Verify</button>
     </form>
     <p class="small">We've sent a code to your email. (Simulated)</p>
+    <p class="small">Your code is: <span id="display-code"></span></p>
 </div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('display-code').textContent = params.get('code') || '';
+    document.getElementById('email').value = params.get('email') || '';
+</script>
 </body>
 </html>

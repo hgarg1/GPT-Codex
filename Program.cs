@@ -11,6 +11,7 @@ app.MapGet("/", () => Results.File(Path.Combine(app.Environment.ContentRootPath,
 app.MapGet("/login", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "login.html"), "text/html"));
 app.MapGet("/signup", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "signup.html"), "text/html"));
 app.MapGet("/verify", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "verify.html"), "text/html"));
+app.MapGet("/dashboard", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "dashboard.html"), "text/html"));
 
 var codes = new Dictionary<string, string>();
 
@@ -26,7 +27,7 @@ app.MapPost("/signup", (HttpRequest request, UserService users) =>
     var code = new Random().Next(100000, 999999).ToString();
     codes[email] = code;
     Console.WriteLine($"Verification code for {email}: {code}");
-    return Results.Redirect("/verify");
+    return Results.Redirect($"/verify?email={Uri.EscapeDataString(email)}&code={code}");
 });
 
 app.MapPost("/login", (HttpRequest request, UserService users) =>
@@ -38,19 +39,26 @@ app.MapPost("/login", (HttpRequest request, UserService users) =>
     {
         return Results.BadRequest("Invalid credentials");
     }
-    var code = new Random().Next(100000, 999999).ToString();
-    codes[email] = code;
-    Console.WriteLine($"Login code for {email}: {code}");
-    return Results.Redirect("/verify");
+    if (!users.IsVerified(email))
+    {
+        var code = new Random().Next(100000, 999999).ToString();
+        codes[email] = code;
+        Console.WriteLine($"Login code for {email}: {code}");
+        return Results.Redirect($"/verify?email={Uri.EscapeDataString(email)}&code={code}");
+    }
+    return Results.Redirect("/dashboard");
 });
 
-app.MapPost("/verify", (HttpRequest request) =>
+app.MapPost("/verify", (HttpRequest request, UserService users) =>
 {
     var form = request.Form;
     var code = form["code"].ToString();
-    if (codes.Values.Contains(code))
+    var email = form["email"].ToString();
+    if (codes.TryGetValue(email, out var stored) && stored == code)
     {
-        return Results.Ok("Verified!");
+        users.MarkVerified(email);
+        codes.Remove(email);
+        return Results.Redirect("/dashboard");
     }
     return Results.BadRequest("Invalid code");
 });
