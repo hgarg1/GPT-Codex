@@ -4,8 +4,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<UserService>();
 
 var app = builder.Build();
+app.UseStaticFiles();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -13,6 +15,53 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapGet("/login", () => Results.File("wwwroot/login.html", "text/html"));
+app.MapGet("/signup", () => Results.File("wwwroot/signup.html", "text/html"));
+app.MapGet("/verify", () => Results.File("wwwroot/verify.html", "text/html"));
+
+var codes = new Dictionary<string, string>();
+
+app.MapPost("/signup", (HttpRequest request, UserService users) =>
+{
+    var form = request.Form;
+    var email = form["email"].ToString();
+    var password = form["password"].ToString();
+    if (!users.AddUser(email, password))
+    {
+        return Results.BadRequest("User already exists");
+    }
+    var code = new Random().Next(100000, 999999).ToString();
+    codes[email] = code;
+    Console.WriteLine($"Verification code for {email}: {code}");
+    return Results.Redirect("/verify");
+});
+
+app.MapPost("/login", (HttpRequest request, UserService users) =>
+{
+    var form = request.Form;
+    var email = form["email"].ToString();
+    var password = form["password"].ToString();
+    if (!users.ValidateCredentials(email, password))
+    {
+        return Results.BadRequest("Invalid credentials");
+    }
+    var code = new Random().Next(100000, 999999).ToString();
+    codes[email] = code;
+    Console.WriteLine($"Login code for {email}: {code}");
+    return Results.Redirect("/verify");
+});
+
+app.MapPost("/verify", (HttpRequest request) =>
+{
+    var form = request.Form;
+    var code = form["code"].ToString();
+    if (codes.Values.Contains(code))
+    {
+        return Results.Ok("Verified!");
+    }
+    return Results.BadRequest("Invalid code");
+});
 
 var summaries = new[]
 {
