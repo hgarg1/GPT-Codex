@@ -1,0 +1,12 @@
+# Ignore build outputs
+bin/
+obj/
+# Visual Studio files
+*.user
+*.suo
+*.vcxproj*
+*.csproj.user
+.vs/
+# Other
+**/*.pdb
+*.cache
