@@ -5,6 +5,7 @@ public class User
 {
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
+    public bool Verified { get; set; }
 }
 
 public class UserService
@@ -29,7 +30,12 @@ public class UserService
     public bool AddUser(string email, string password)
     {
         if (_users.ContainsKey(email)) return false;
-        var user = new User { Email = email, PasswordHash = BCrypt.Net.BCrypt.HashPassword(password) };
+        var user = new User
+        {
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            Verified = false
+        };
         _users[email] = user;
         Save();
         return true;
@@ -42,6 +48,18 @@ public class UserService
             return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
         return false;
+    }
+
+    public bool IsVerified(string email) =>
+        _users.TryGetValue(email, out var user) && user.Verified;
+
+    public void MarkVerified(string email)
+    {
+        if (_users.TryGetValue(email, out var user))
+        {
+            user.Verified = true;
+            Save();
+        }
     }
 
     private void Save()
