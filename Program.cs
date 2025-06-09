@@ -1,24 +1,16 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<UserService>();
 
 var app = builder.Build();
 app.UseStaticFiles();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.MapGet("/login", () => Results.File("wwwroot/login.html", "text/html"));
-app.MapGet("/signup", () => Results.File("wwwroot/signup.html", "text/html"));
-app.MapGet("/verify", () => Results.File("wwwroot/verify.html", "text/html"));
+app.MapGet("/", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "login.html"), "text/html"));
+app.MapGet("/login", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "login.html"), "text/html"));
+app.MapGet("/signup", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "signup.html"), "text/html"));
+app.MapGet("/verify", () => Results.File(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "verify.html"), "text/html"));
 
 var codes = new Dictionary<string, string>();
 
@@ -80,8 +72,7 @@ app.MapGet("/weatherforecast", () =>
         .ToArray();
     return forecast;
 })
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+.WithName("GetWeatherForecast");
 
 app.Run();
 
